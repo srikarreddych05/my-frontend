@@ -8,7 +8,7 @@ import {
 
 // --- CONFIGURATION ---
 const API_BASE = "https://smart-parking-backend-1cvq.onrender.com/api";
-const WS_BASE = "ws://smart-parking-backend-1cvq.onrender.com/ws/parking";
+const WS_BASE = "wss://smart-parking-backend-1cvq.onrender.com/ws/parking";
 
 // --- UI COMPONENTS ---
 const Card = ({ children, className = '' }) => (
