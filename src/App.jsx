@@ -718,9 +718,10 @@ export default function App() {
   
   // App States
   const [currentUser, setCurrentUser] = useState(null);
-  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '', role: 'driver', carNumber: '', employeeId: '' });
+  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '', otp: '', carNumber: '' });
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
+  const [otpSent, setOtpSent] = useState(false); 
   
   const [spots, setSpots] = useState([]);
   const [emergencyMode, setEmergencyMode] = useState(false);
@@ -793,24 +794,64 @@ export default function App() {
   const cancelEvacuation = () => setEvacuationCountdown(null);
 
   // 3. AUTHENTICATION (POST)
+  // 3. AUTHENTICATION (POST)
+  const handleSendOTP = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+    try {
+      const response = await fetch(`${API_BASE}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authForm.email })
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setAuthSuccess('OTP sent successfully! Please check your email.');
+        setOtpSent(true);
+      } else {
+        setAuthError(data.detail || 'Failed to send OTP.');
+      }
+    } catch (err) {
+      setAuthError('Could not connect to the backend server.');
+    }
+  };
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
     setAuthSuccess('');
 
     const endpoint = isRegistering ? '/register' : '/login';
+    
+    // We strictly define what we send based on login vs register to prevent 422 Errors
+    const payload = isRegistering 
+      ? { 
+          name: authForm.name, 
+          email: authForm.email, 
+          password: authForm.password, 
+          otp: authForm.otp, 
+          carNumber: authForm.carNumber 
+        }
+      : { 
+          email: authForm.email, 
+          password: authForm.password 
+        };
+
     try {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authForm)
+        body: JSON.stringify(payload)
       });
       const data = await response.json();
 
       if (response.ok) {
         if (isRegistering) {
-          setAuthSuccess('Registration successful! Please login.');
+          setAuthSuccess('Registration successful! Please sign in.');
           setIsRegistering(false);
+          setOtpSent(false); // Reset OTP state
         } else {
           setCurrentUser(data.user);
           setRole(data.user.role);
@@ -828,7 +869,8 @@ export default function App() {
     setIsRegistering(!isRegistering);
     setAuthError('');
     setAuthSuccess('');
-    setAuthForm({ name: '', email: '', password: '', role: 'driver', carNumber: '', employeeId: '' });
+    setOtpSent(false); // Reset OTP state
+    setAuthForm({ name: '', email: '', password: '', otp: '', carNumber: '' });
   };
 
   // Auth Screen Render
@@ -861,68 +903,47 @@ export default function App() {
               </div>
             )}
             
-            <form className="space-y-4" onSubmit={handleAuthSubmit}>
+            {/* If registering and no OTP sent yet, call handleSendOTP. Otherwise, submit the form! */}
+            <form className="space-y-4" onSubmit={isRegistering && !otpSent ? handleSendOTP : handleAuthSubmit}>
               {isRegistering && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Account Type</label>
-                    <select 
-                      value={authForm.role}
-                      onChange={(e) => setAuthForm({...authForm, role: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                    >
-                      <option value="driver">Driver</option>
-                      <option value="admin_staff">Staff</option>
-                      <option value="admin_super">Super Admin</option>
-                    </select>
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
                     <input 
                       type="text" 
                       required 
+                      disabled={otpSent}
                       value={authForm.name}
                       onChange={(e) => setAuthForm({...authForm, name: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50" 
                       placeholder="John Doe" 
                     />
                   </div>
                   
-                  {authForm.role === 'driver' ? (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Car Number (License Plate)</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={authForm.carNumber}
-                        onChange={(e) => setAuthForm({...authForm, carNumber: e.target.value})}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase" 
-                        placeholder="e.g. ABC-1234" 
-                      />
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Employee ID</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={authForm.employeeId}
-                        onChange={(e) => setAuthForm({...authForm, employeeId: e.target.value})}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase" 
-                        placeholder="e.g. EMP-999" 
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Car Number (License Plate)</label>
+                    <input 
+                      type="text" 
+                      required 
+                      disabled={otpSent}
+                      value={authForm.carNumber}
+                      onChange={(e) => setAuthForm({...authForm, carNumber: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all uppercase disabled:opacity-50" 
+                      placeholder="e.g. ABC-1234" 
+                    />
+                  </div>
                 </>
               )}
+              
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
                 <input 
                   type="email" 
                   required 
+                  disabled={isRegistering && otpSent}
                   value={authForm.email}
                   onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50" 
                   placeholder="you@example.com" 
                 />
               </div>
@@ -931,15 +952,33 @@ export default function App() {
                 <input 
                   type="password" 
                   required 
+                  disabled={isRegistering && otpSent}
                   value={authForm.password}
                   onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50" 
                   placeholder="••••••••" 
                 />
               </div>
+
+              {/* The New OTP Input Field! */}
+              {isRegistering && otpSent && (
+                <div className="animate-in fade-in slide-in-from-top-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Verification Code (OTP)</label>
+                  <input 
+                    type="text" 
+                    required 
+                    maxLength={6}
+                    value={authForm.otp}
+                    onChange={(e) => setAuthForm({...authForm, otp: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-lg tracking-widest text-center font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" 
+                    placeholder="123456" 
+                  />
+                  <p className="text-xs text-slate-500 mt-2 text-center">We sent a 6-digit code to {authForm.email}</p>
+                </div>
+              )}
               
               <button type="submit" className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors mt-6 shadow-md shadow-slate-900/10">
-                {isRegistering ? 'Register Account' : 'Sign In'}
+                {!isRegistering ? 'Sign In' : (!otpSent ? 'Send OTP' : 'Complete Registration')}
               </button>
             </form>
 
