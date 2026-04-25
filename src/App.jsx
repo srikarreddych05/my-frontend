@@ -714,6 +714,24 @@ export default function App() {
   const [evacuationCountdown, setEvacuationCountdown] = useState(null);
   const [globalBookings, setGlobalBookings] = useState([]);
 
+  // --- NEW: FETCH USER HISTORY ON LOGIN ---
+  useEffect(() => {
+    // Only fetch if a user is currently logged in as a driver
+    if (currentUser?.id && role === 'driver') {
+      fetch(`${API_BASE}/bookings/user/${currentUser.id}`)
+        .then(res => res.json())
+        .then(data => {
+          // Attach the permanent database history to the user profile!
+          setCurrentUser(prev => ({
+            ...prev,
+            activeBooking: data.activeBooking,
+            bookingHistory: data.history
+          }));
+        })
+        .catch(err => console.error("Failed to load history:", err));
+    }
+  }, [currentUser?.id, role]); // This dependency array ensures it only runs ONCE when you log in!
+
   // 1. INITIAL DATA FETCH (REST)
   useEffect(() => {
     fetch(`${API_BASE}/spots`)
