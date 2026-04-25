@@ -46,7 +46,7 @@ const ParkingGrid = ({ spots, onSpotClick, interactive = false, highlightPlate =
   };
 
   return (
-    <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+    <div className="grid grid-cols-5 gap-4 max-w-4xl mx-auto">
       {spots.map((spot) => {
         const isHighlighted = highlightPlate && spot.plate && spot.plate.toLowerCase().includes(highlightPlate.toLowerCase());
         return (
@@ -679,8 +679,8 @@ const EntranceSignage = ({ spots }) => {
           {!isFull && <p className="text-3xl md:text-5xl font-bold text-emerald-500/80 mt-4 uppercase tracking-widest">Spots Open</p>}
         </div>
 
-        <div className="mt-16 grid grid-cols-3 gap-8">
-          {['A', 'B', 'C'].map(zone => {
+        <div className="mt-16 grid grid-cols-2 gap-8 max-w-2xl mx-auto">
+          {['A', 'B'].map(zone => {
             const zoneSpots = spots.filter(s => s.zone === zone && s.status === 'free').length;
             return (
               <div key={zone} className="bg-slate-900/50 p-6 rounded-3xl border border-slate-800 text-center">
@@ -714,7 +714,6 @@ export default function App() {
   const [evacuationCountdown, setEvacuationCountdown] = useState(null);
   const [globalBookings, setGlobalBookings] = useState([]);
 
-  // --- NEW: FETCH USER HISTORY ON LOGIN ---
   useEffect(() => {
     // Only fetch if a user is currently logged in as a driver
     if (currentUser?.id && role === 'driver') {
