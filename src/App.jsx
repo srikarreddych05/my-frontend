@@ -88,13 +88,14 @@ const DriverDashboard = ({ spots, emergencyMode, currentUser, setCurrentUser }) 
   const [selectedSpotForBooking, setSelectedSpotForBooking] = useState(null);
   
   const [bookingStartTime, setBookingStartTime] = useState('');
-  const [bookingEndTime, setBookingEndTime] = useState('');
+  // Removed bookingEndTime state entirely
   
   const myBooking = currentUser?.activeBooking;
 
   // Real Backend Booking Logic
   const handleConfirmBooking = async () => {
-    if (!selectedSpotForBooking || !bookingStartTime || !bookingEndTime) return;
+    // Removed bookingEndTime from the validation check
+    if (!selectedSpotForBooking || !bookingStartTime) return;
 
     try {
       const response = await fetch(`${API_BASE}/bookings/reserve`, {
@@ -104,7 +105,7 @@ const DriverDashboard = ({ spots, emergencyMode, currentUser, setCurrentUser }) 
           spot_id: selectedSpotForBooking.id, 
           user_id: currentUser.id,
           start_time: bookingStartTime,
-          end_time: bookingEndTime,
+          // Removed end_time from the payload entirely
           plate: currentUser.plate
         })
       });
@@ -120,7 +121,7 @@ const DriverDashboard = ({ spots, emergencyMode, currentUser, setCurrentUser }) 
           id: selectedSpotForBooking.id,
           date: new Date().toLocaleDateString(),
           startTime: bookingStartTime,
-          endTime: bookingEndTime,
+          endTime: 'Active', // Replaced the end time variable with the word "Active"
           plate: currentUser.plate,
           price: '$4.50/hr',
           status: 'Active'
@@ -130,7 +131,6 @@ const DriverDashboard = ({ spots, emergencyMode, currentUser, setCurrentUser }) 
       setIsBookingOpen(false);
       setSelectedSpotForBooking(null);
       setBookingStartTime('');
-      setBookingEndTime('');
     } catch (err) {
       alert(err.message);
     }
@@ -288,32 +288,18 @@ const DriverDashboard = ({ spots, emergencyMode, currentUser, setCurrentUser }) 
                />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Start Time</label>
-                 <div className="relative">
-                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                   <input 
-                     type="time" 
-                     value={bookingStartTime}
-                     onChange={(e) => setBookingStartTime(e.target.value)}
-                     className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
-                     required 
-                   />
-                 </div>
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1.5">End Time</label>
-                 <div className="relative">
-                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                   <input 
-                     type="time" 
-                     value={bookingEndTime}
-                     onChange={(e) => setBookingEndTime(e.target.value)}
-                     className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
-                     required 
-                   />
-                 </div>
+            {/* Changed from 2 cols to 1 col since we only have start time now */}
+            <div className="mb-6">
+               <label className="block text-sm font-medium text-slate-700 mb-1.5">Start Time</label>
+               <div className="relative">
+                 <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                 <input 
+                   type="time" 
+                   value={bookingStartTime}
+                   onChange={(e) => setBookingStartTime(e.target.value)}
+                   className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
+                   required 
+                 />
                </div>
             </div>
 
@@ -326,10 +312,10 @@ const DriverDashboard = ({ spots, emergencyMode, currentUser, setCurrentUser }) 
                  )}
                </div>
                <div className="flex gap-3">
-                 <button onClick={() => { setIsBookingOpen(false); setBookingStartTime(''); setBookingEndTime(''); }} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+                 <button onClick={() => { setIsBookingOpen(false); setBookingStartTime(''); }} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
                  <button 
                    onClick={handleConfirmBooking} 
-                   disabled={!selectedSpotForBooking || !bookingStartTime || !bookingEndTime}
+                   disabled={!selectedSpotForBooking || !bookingStartTime}
                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-lg shadow-sm transition-colors"
                  >
                    Confirm Booking
@@ -793,7 +779,6 @@ export default function App() {
   const startEvacuation = () => setEvacuationCountdown(10);
   const cancelEvacuation = () => setEvacuationCountdown(null);
 
-  // 3. AUTHENTICATION (POST)
   // 3. AUTHENTICATION (POST)
   const handleSendOTP = async (e) => {
     e.preventDefault();
